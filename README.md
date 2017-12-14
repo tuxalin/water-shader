@@ -19,9 +19,10 @@ Current implemented features are:
 	
 ## Usage
 
-The shader requires a refraction and reflection maps of the scene, the refraction map also requires the depth.
+The shader requires refraction and reflection maps of the scene, the refraction map also requires the depth.
 See the textures folder for examples of sky, shore, foam, height and normal maps. 
-Certain features can be switched of via the following defines:
+
+Certain features can be switched off via the following defines:
 - USE_DISPLACEMENT, adds displacement of gerstner and sinve waves, with an additional height map
 - USE_MEAN_SKY_RADIANCE, adds mean sky radiance reflectance, requires a sky map
 - USE_FILTERING, enable/disable bicubic filtering
