@@ -48,10 +48,10 @@ Planned improvements are:
 ## Contributing
 
 Based on:
--[Rendering Water as a Post-process Effect by Wojciech Toman](https://www.gamedev.net/articles/programming/graphics/rendering-water-as-a-post-process-effect-r2642/).
--[GPU Gems Chapter 1. Effective Water Simulation from Physical Models, by Mark Finch and Cyan Worlds](http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch01.html)
--[Real-time Realistic Ocean Lighting using Seamless Transitions from Geometry to BRDF by Eric Bruneton, Fabrice Neyret, Nicolas Holzschuch](https://hal.inria.fr/inria-00443630/file/article-1.pdf)
--[HLSL 2D simplex noise function by Ian McEwan, Ashima Arts](https://github.com/ashima/webgl-noise)
+- [Rendering Water as a Post-process Effect by Wojciech Toman](https://www.gamedev.net/articles/programming/graphics/rendering-water-as-a-post-process-effect-r2642/).
+- [GPU Gems Chapter 1. Effective Water Simulation from Physical Models, by Mark Finch and Cyan Worlds](http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch01.html)
+- [Real-time Realistic Ocean Lighting using Seamless Transitions from Geometry to BRDF by Eric Bruneton, Fabrice Neyret, Nicolas Holzschuch](https://hal.inria.fr/inria-00443630/file/article-1.pdf)
+- [HLSL 2D simplex noise function by Ian McEwan, Ashima Arts](https://github.com/ashima/webgl-noise)
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/tuxalin/water-shader.
 
