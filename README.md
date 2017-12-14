@@ -38,6 +38,7 @@ Composition of the water(final, shore, refraction+depth colour, reflection + dis
 ![water-layers](https://orig00.deviantart.net/1199/f/2017/347/1/5/water_layers_by_tuxalin-dbwmyke.jpg)
 
 Water settings:
+
 ![water-settings](screenshots/water_settings.jpg)
 
 ## Future improvements
