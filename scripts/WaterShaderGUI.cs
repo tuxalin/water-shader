@@ -1,14 +1,14 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System;
-using System.Collections;
+using System.Collections.Generic;
 
 public class WaterShaderGUI : ShaderGUI
 {
     private string[] displacementProps = new string[] { "_HeightTexture", "_HeightIntensity", "_WaveTiling", "_WaveAmplitudeFactor", "_WaveSteepness", "_WaveAmplitude" };
     private string[] meanSkyProps = new string[] { "_RadianceFactor" };
 
-    private void CheckFeature(Material targetMat, MaterialProperty[] materialProperties, string toggleName, string featureName, string[] properties, Hashtable disabledProperties)
+    private void CheckFeature(Material targetMat, MaterialProperty[] materialProperties, string toggleName, string featureName, string[] properties, HashSet<string> disabledProperties)
     {
         bool isEnabled = Array.IndexOf(targetMat.shaderKeywords, featureName) != -1;
 
@@ -17,7 +17,7 @@ public class WaterShaderGUI : ShaderGUI
         {
             foreach (string name in properties)
             {
-                disabledProperties.Add(name, true);
+                disabledProperties.Add(name);
             }
         }
     }
@@ -26,14 +26,14 @@ public class WaterShaderGUI : ShaderGUI
     {
         Material targetMat = materialEditor.target as Material;
 
-        Hashtable disabledProperties = new Hashtable();
+        HashSet<string> disabledProperties = new HashSet<string>();
         CheckFeature(targetMat, properties, "_UseDisplacement", "USE_DISPLACEMENT", displacementProps, disabledProperties);
         CheckFeature(targetMat, properties, "_UseMeanSky", "USE_MEAN_SKY_RADIANCE", meanSkyProps, disabledProperties);
 
         // show only visible properties based on enabled features
         foreach (MaterialProperty property in properties)
         {
-            if (property.name != "_ReflectionTexture" && !disabledProperties.ContainsKey(property.name))
+            if (property.name != "_ReflectionTexture" && !disabledProperties.Contains(property.name))
                 materialEditor.ShaderProperty(property, property.displayName);
         }
     }
