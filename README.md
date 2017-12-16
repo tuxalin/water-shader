@@ -15,7 +15,7 @@ Current implemented features are:
 - enabling/disabling features
 - bicubic filtering
 - configurable shore foam
-- Unity support
+- HLSL/GLSL/Unity support(for GLSL use the conversion script to SPIR-V)
 	
 ## Usage
 
