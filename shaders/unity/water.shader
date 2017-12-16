@@ -196,7 +196,11 @@ Shader "Water" {
 			float heightIntensity = _HeightIntensity * (1.0 - cameraDistance / 100.0) * _WaveAmplitude;
 			float2 texCoord = worldPos.xz * 0.05 *_TextureTiling;
 			if (heightIntensity > 0.02)
-				worldPos.y += ComputeNoiseHeight(_HeightTexture, _WavesIntensity, _WavesNoise, texCoord, noise, timer) * heightIntensity;
+			{
+				float height = ComputeNoiseHeight(_HeightTexture, _WavesIntensity, _WavesNoise, 
+					texCoord, noise, timer);
+				worldPos.y += height * heightIntensity;
+			}
 
 			modelPos = mul(unity_WorldToObject, float4(worldPos, 1));
 			o.tangent = tangent;
@@ -283,8 +287,9 @@ Shader "Water" {
 #endif // #ifdef USE_FILTERING
 
 			// shore foam
+			float maxAmplitude = max(max(_WaveAmplitude.x, _WaveAmplitude.y), _WaveAmplitude.z);
 			float foam = FoamValue(_ShoreTexture, _FoamTexture, _FoamTiling,
-				_FoamNoise, _FoamSpeed * windDir, _FoamRanges, _WaveAmplitude,
+				_FoamNoise, _FoamSpeed * windDir, _FoamRanges, maxAmplitude,
 				surfacePosition, depthPosition, eyeDir, waterDepth, timedWindDir, timer);
 			foam *= _FoamIntensity;
 
