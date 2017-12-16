@@ -2,7 +2,7 @@
 // Description : Utilties for waves displacement
 //
 
-#include "water/waves.cginc"
+#include "waves.cginc"
 
 float2 GetNoise(in float2 position, in float2 timedWindDir)
 {
@@ -17,6 +17,39 @@ void AdjustWavesValues(in float2 noise, inout half4 wavesNoise, inout half4 wave
 	wavesNoise = wavesNoise * half4(noise.y * 0.25, noise.y * 0.25, noise.x + noise.y, noise.y);
 	wavesIntensity = wavesIntensity + half4(saturate(noise.y - noise.x), noise.x, noise.y, noise.x + noise.y);
 	wavesIntensity = clamp(wavesIntensity, 0.01, 10);
+}
+
+// uv in texture space, normal in world space
+half3 ComputeNormal(sampler2D normalTexture, float2 worldPos, float2 texCoord,
+	half3 normal, half3 tangent, half3 bitangent,
+	half4 wavesNoise, half4 wavesIntensity, float2 timedWindDir)
+{
+	float2 noise = GetNoise(worldPos, timedWindDir * 0.5);
+	AdjustWavesValues(noise, wavesNoise, wavesIntensity);
+
+	float2 texCoords[4] = { texCoord * 1.6 + timedWindDir * 0.064 + wavesNoise.x,
+		texCoord * 0.8 + timedWindDir * 0.032 + wavesNoise.y,
+		texCoord * 0.5 + timedWindDir * 0.016 + wavesNoise.z,
+		texCoord * 0.3 + timedWindDir * 0.008 + wavesNoise.w };
+
+	half3 wavesNormal = half3(0, 1, 0);
+#ifdef USE_DISPLACEMENT
+	normal = normalize(normal);
+	tangent = normalize(tangent);
+	bitangent = normalize(bitangent);
+	for (int i = 0; i < 4; ++i)
+	{
+		wavesNormal += ComputeSurfaceNormal(normal, tangent, bitangent, normalTexture, texCoords[i]) * wavesIntensity[i];
+	}
+#else
+	for (int i = 0; i < 4; ++i)
+	{
+		wavesNormal += UnpackNormal(tex2D(normalTexture, texCoords[i])) * wavesIntensity[i];
+	}
+	wavesNormal.xyz = wavesNormal.xzy; // flip zy to avoid btn multiplication
+#endif // #ifdef USE_DISPLACEMENT
+
+	return wavesNormal;
 }
 
 #ifdef USE_DISPLACEMENT

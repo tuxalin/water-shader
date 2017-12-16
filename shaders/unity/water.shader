@@ -71,14 +71,15 @@ Shader "Water" {
 		#pragma vertex vert
 		#pragma fragment frag
 		#include "UnityCG.cginc"
-		#include "snoise.cginc"
 		#include "conversion.cginc"
-		#include "bicubic.cginc"
-		#include "normals.cginc"
-		#include "water/displacement.cginc"
-		#include "water/meansky.cginc"
-		#include "water/radiance.cginc"
-		#include "water/depth.cginc"
+		#include "hlsl/snoise.cginc"
+		#include "hlsl/bicubic.cginc"
+		#include "hlsl/normals.cginc"
+		#include "hlsl/water/displacement.cginc"
+		#include "hlsl/water/meansky.cginc"
+		#include "hlsl/water/radiance.cginc"
+		#include "hlsl/water/depth.cginc"
+		#include "hlsl/water/foam.cginc"
 		#pragma multi_compile_fog
 		#pragma shader_feature USE_DISPLACEMENT
 		#pragma shader_feature USE_MEAN_SKY_RADIANCE
@@ -128,7 +129,7 @@ Shader "Water" {
 		// Horizontal extinction of the RGB channels, in world coordinates. 
 		// Red wavelengths dissapear(get absorbed) at around 5m, followed by green(75m) and blue(300m).
 		uniform float3 _HorizontalExtinction;
-		uniform float _Shininess = 0.15f;
+		uniform float _Shininess;
 		// xy = Specular intensity values, z = shininess exponential factor.
 		uniform float3 _SpecularValues;
 		// x = index of refraction constant, y = refraction intensity
@@ -167,83 +168,6 @@ Shader "Water" {
 			UNITY_FOG_COORDS(8)
 		};
 
-		// uv in texture space, normal in world space
-		half3 ComputeNormal(float2 uv, half3 normal, half3 tangent, half3 bitangent, float2 timedWindDir)
-		{
-			float2 texCoord = uv * 0.05 * _TextureTiling;
-
-			float2 noise = GetNoise(uv, timedWindDir * 0.5);
-			half4 wavesNoise = _WavesNoise, wavesIntensity = _WavesIntensity;
-			AdjustWavesValues(noise, wavesNoise, wavesIntensity);
-
-			float2 texCoords[4] = { texCoord * 1.6 + timedWindDir * 0.064 + wavesNoise.x,
-									texCoord * 0.8 + timedWindDir * 0.032 + wavesNoise.y,
-									texCoord * 0.5 + timedWindDir * 0.016 + wavesNoise.z,
-									texCoord * 0.3 + timedWindDir * 0.008 + wavesNoise.w };
-
-			half3 wavesNormal = half3(0, 1, 0);
-#ifdef USE_DISPLACEMENT
-			normal = normalize(normal);
-			tangent = normalize(tangent);
-			bitangent = normalize(bitangent);
-			for (int i = 0; i < 4; ++i)
-			{
-				wavesNormal += ComputeSurfaceNormal(normal, tangent, bitangent, _NormalTexture, texCoords[i]) * wavesIntensity[i];
-		   }
-#else
-			for (int i = 0; i < 4; ++i)
-			{
-				wavesNormal += UnpackNormal(tex2D(_NormalTexture, texCoords[i])) * wavesIntensity[i];
-			}
-			wavesNormal.xyz = wavesNormal.xzy; // flip zy to avoid btn multiplication
-#endif // #ifdef USE_DISPLACEMENT
-
-			return normalize(lerp(normal, normalize(wavesNormal), _NormalIntensity));
-		}
-
-		half FoamColor(sampler2D tex, float2 texCoord, float2 texCoord2, float2 ranges, half2 factors, float waterDepth, half baseColor)
-		{
-			float f1 = tex2D(tex, texCoord).r;
-			float f2 = tex2D(tex, texCoord2).r;
-			return lerp(f1 * factors.x + f2 * factors.y, baseColor, smoothstep(ranges.x, ranges.y, waterDepth));
-		}
-
-		// surfacePosition, depthPosition, eyeVec in world space
-		// waterDepth is the horizontal water depth in world space
-		half FoamValue(float3 surfacePosition, float3 depthPosition, float3 eyeVec, float waterDepth, float2 windDir, float2 timedWindDir, float timer)
-		{
-			float2 position = (surfacePosition.xz + eyeVec.xz * 0.1) * 0.5;
-			float2 foamSpeed = _FoamSpeed * windDir;
-
-			float s = sin(timer * 0.01 + depthPosition.x);
-			float2 texCoord = position + timer * 0.01 * foamSpeed + s * 0.05;
-			s = sin(timer * 0.01 + depthPosition.z);
-			float2 texCoord2 = (position + timer * 0.015 * foamSpeed + s * 0.05) * -0.5; // also flip
-			float2 texCoord3 = texCoord * _FoamTiling.x;
-			float2 texCoord4 = (position + timer * 0.015 * -foamSpeed * 0.3 + s * 0.05) * -0.5 * _FoamTiling.x; // reverse direction
-			texCoord *= _FoamTiling.y;
-			texCoord2 *= _FoamTiling.y;
-
-			float2 ranges = _FoamRanges.xy;
-			ranges.x += snoise(surfacePosition.xz + _FoamNoise.z * timedWindDir) * _FoamNoise.x;
-			ranges.y += snoise(surfacePosition.xz + _FoamNoise.w * timedWindDir) * _FoamNoise.y;
-			ranges = clamp(ranges, 0.0, 10.0);
-
-			float foamEdge = max(ranges.x, ranges.y);
-			half deepFoam = FoamColor(_FoamTexture, texCoord, texCoord2, float2(ranges.x, foamEdge), half2(1.0, 0.5), waterDepth, 0.0);
-			half foam = FoamColor(_ShoreTexture, texCoord3 * 0.25, texCoord4, float2(0.0, ranges.x), half2(0.75, 1.5), waterDepth, deepFoam);
-
-			// high waves foam
-			float maxAmplitude = _WaveAmplitude;
-			if (surfacePosition.y - _FoamRanges.z > 0.0001f)
-			{
-				half amount = saturate((surfacePosition.y - _FoamRanges.z) / maxAmplitude) * 0.25;
-				foam += (tex2D(_ShoreTexture, texCoord3).x + tex2D(_ShoreTexture, texCoord4).x * 0.5f) * amount;
-			}
-
-			return foam;
-		}
-
 		VertexOutput vert(VertexInput v)
 		{
 			VertexOutput o = (VertexOutput)0;
@@ -264,7 +188,9 @@ Shader "Water" {
 			half3 tangent;
 			float4 waveSettings = float4(windDir, _WaveSteepness, _WaveTiling);
 			float4 waveAmplitudes = _WaveAmplitude * _WaveAmplitudeFactor;
-			worldPos = ComputeDisplacement(worldPos, cameraDistance, noise, timer, waveSettings, waveAmplitudes, _WavesIntensity, _WavesNoise, normal, tangent);
+			worldPos = ComputeDisplacement(worldPos, cameraDistance, noise, timer,
+				waveSettings, waveAmplitudes, _WavesIntensity, _WavesNoise,
+				normal, tangent);
 
 			// add extra noise height from a heightmap
 			float heightIntensity = _HeightIntensity * (1.0 - cameraDistance / 100.0) * _WaveAmplitude;
@@ -282,7 +208,7 @@ Shader "Water" {
 			o.wind.xy = windDir;
 			o.wind.zw = windDir * timer;
 
-			o.uv = uv;
+			o.uv = uv  * 0.05 * _TextureTiling;
 			o.pos = UnityObjectToClipPos(modelPos);
 			o.worldPos = worldPos;
 			o.projPos = ComputeScreenPos(o.pos);
@@ -305,10 +231,13 @@ Shader "Water" {
 
 			//wave normal
 #ifdef USE_DISPLACEMENT
-			half3 normal = ComputeNormal(fs_in.uv, fs_in.normal, fs_in.tangent, fs_in.bitangent, timedWindDir);
+			half3 normal = ComputeNormal(_NormalTexture, surfacePosition.xz, fs_in.uv,
+				fs_in.normal, fs_in.tangent, fs_in.bitangent, _WavesNoise, _WavesIntensity, timedWindDir);
 #else
-			half3 normal = ComputeNormal(fs_in.uv, fs_in.normal, 0, 0, timedWindDir);
+			half3 normal = ComputeNormal(_NormalTexture, surfacePosition.xz, fs_in.uv,
+				fs_in.normal, 0, 0, _WavesNoise, _WavesIntensity, timedWindDir);
 #endif
+			normal = normalize(lerp(fs_in.normal, normalize(normal), _NormalIntensity));
 
 			// compute refracted color
 			float depth = tex2Dproj(_CameraDepthTexture, UNITY_PROJ_COORD(fs_in.projPos.xyww));
@@ -354,14 +283,17 @@ Shader "Water" {
 #endif // #ifdef USE_FILTERING
 
 			// shore foam
-			float foam = FoamValue(surfacePosition, depthPosition, eyeDir, waterDepth, windDir, timedWindDir, timer) * _FoamIntensity;
+			float foam = FoamValue(_ShoreTexture, _FoamTexture, _FoamTiling,
+				_FoamNoise, _FoamSpeed * windDir, _FoamRanges, _WaveAmplitude,
+				surfacePosition, depthPosition, eyeDir, waterDepth, timedWindDir, timer);
+			foam *= _FoamIntensity;
 
 			half  shoreFade = saturate(waterDepth * _ShoreFade);
 			// ambient + diffuse
 			half3 ambientColor = UNITY_LIGHTMODEL_AMBIENT.rgb * _AmbientDensity + saturate(dot(normal, lightDir)) * _DiffuseDensity;
 			// refraction color with depth based color
 			pureRefractionColor = lerp(pureRefractionColor, reflectColor, fresnel * saturate(waterDepth / (_FoamRanges.x * 0.4)));
-			pureRefractionColor = lerp(pureRefractionColor, _ShoreColor, 0.15*shoreFade * 2);
+			pureRefractionColor = lerp(pureRefractionColor, _ShoreColor, 0.30 * shoreFade);
 			// compute final color
 			half3 color = lerp(refractionColor, reflectColor, fresnel);
 			color = saturate(ambientColor + color + max(specularColor, foam * lightColor));
