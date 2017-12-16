@@ -46,7 +46,6 @@ Planned improvements are:
 - underwater mode with light rays
 - cascading depth maps
 - improved water displacement/simulation(FFT)
-- main GLSL and HLSL shader
 
 ## Contributing
 
