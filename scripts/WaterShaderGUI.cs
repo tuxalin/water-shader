@@ -7,7 +7,7 @@ public class WaterShaderGUI : ShaderGUI
 {
     private string[] displacementProps = new string[] { "_HeightTexture", "_HeightIntensity", "_WaveTiling", "_WaveAmplitudeFactor", "_WaveSteepness", "_WaveAmplitude" };
     private string[] meanSkyProps = new string[] { "_RadianceFactor" };
-    private string[] foamProps = new string[] { "_ShoreTexture", "_FoamTexture", "_FoamTiling", "_FoamNoise", "_FoamSpeed", "_FoamRanges", "_FoamIntensity" };
+    private string[] foamProps = new string[] { "_ShoreTexture", "_FoamTexture", "_FoamTiling", "_FoamNoise", "_FoamSpeed", "_FoamIntensity" };
 
     private void CheckFeature(Material targetMat, MaterialProperty[] materialProperties, string toggleName, string featureName, string[] properties, HashSet<string> disabledProperties)
     {

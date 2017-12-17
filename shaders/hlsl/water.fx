@@ -219,7 +219,8 @@ float4 frag(VertexOutput fs_in, float facing : VFACE) : COLOR
 	half3 pureRefractionColor = tex2D(_RefractionTexture, dudv).rgb;
 	float2 waterTransparency = float2(_WaterClarity, _WaterTransparency);
 	float2 waterDepthValues = float2(waterDepth, viewWaterDepth);
-	half3 refractionColor = DepthRefraction(waterTransparency, waterDepthValues, _FoamRanges, _HorizontalExtinction,
+	float shoreRange = max(_FoamRanges.x, _FoamRanges.y) * 2.0;
+	half3 refractionColor = DepthRefraction(waterTransparency, waterDepthValues, shoreRange, _HorizontalExtinction,
 											pureRefractionColor, _ShoreColor, _SurfaceColor, _DepthColor);
 
 	// compute ligths's reflected radiance
@@ -245,12 +246,12 @@ float4 frag(VertexOutput fs_in, float facing : VFACE) : COLOR
 	// shore foam
 #ifdef USE_FOAM
 	float maxAmplitude = max(max(_WaveAmplitude.x, _WaveAmplitude.y), _WaveAmplitude.z);
-	float foam = FoamValue(_ShoreTexture, _FoamTexture, _FoamTiling,
+	half foam = FoamValue(_ShoreTexture, _FoamTexture, _FoamTiling,
 				_FoamNoise, _FoamSpeed * windDir, _FoamRanges, maxAmplitude,
 				surfacePosition, depthPosition, eyeDir, waterDepth, timedWindDir, timer);
 	foam *= _FoamIntensity;
 #else
-	float foam = 0;
+	half foam = 0;
 #endif // #ifdef USE_FOAM
 
 	half  shoreFade = saturate(waterDepth * _ShoreFade);
