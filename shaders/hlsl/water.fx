@@ -243,11 +243,15 @@ float4 frag(VertexOutput fs_in, float facing : VFACE) : COLOR
 #endif // #ifdef USE_FILTERING
 
 	// shore foam
+#ifdef USE_FOAM
 	float maxAmplitude = max(max(_WaveAmplitude.x, _WaveAmplitude.y), _WaveAmplitude.z);
 	float foam = FoamValue(_ShoreTexture, _FoamTexture, _FoamTiling,
-		_FoamNoise, _FoamSpeed * windDir, _FoamRanges, maxAmplitude,
-		surfacePosition, depthPosition, eyeDir, waterDepth, timedWindDir, timer);
+				_FoamNoise, _FoamSpeed * windDir, _FoamRanges, maxAmplitude,
+				surfacePosition, depthPosition, eyeDir, waterDepth, timedWindDir, timer);
 	foam *= _FoamIntensity;
+#else
+	float foam = 0;
+#endif // #ifdef USE_FOAM
 
 	half  shoreFade = saturate(waterDepth * _ShoreFade);
 	// ambient + diffuse

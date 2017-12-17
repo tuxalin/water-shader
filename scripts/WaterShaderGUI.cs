@@ -7,6 +7,7 @@ public class WaterShaderGUI : ShaderGUI
 {
     private string[] displacementProps = new string[] { "_HeightTexture", "_HeightIntensity", "_WaveTiling", "_WaveAmplitudeFactor", "_WaveSteepness", "_WaveAmplitude" };
     private string[] meanSkyProps = new string[] { "_RadianceFactor" };
+    private string[] foamProps = new string[] { "_ShoreTexture", "_FoamTexture", "_FoamTiling", "_FoamNoise", "_FoamSpeed", "_FoamRanges", "_FoamIntensity" };
 
     private void CheckFeature(Material targetMat, MaterialProperty[] materialProperties, string toggleName, string featureName, string[] properties, HashSet<string> disabledProperties)
     {
@@ -29,6 +30,7 @@ public class WaterShaderGUI : ShaderGUI
         HashSet<string> disabledProperties = new HashSet<string>();
         CheckFeature(targetMat, properties, "_UseDisplacement", "USE_DISPLACEMENT", displacementProps, disabledProperties);
         CheckFeature(targetMat, properties, "_UseMeanSky", "USE_MEAN_SKY_RADIANCE", meanSkyProps, disabledProperties);
+        CheckFeature(targetMat, properties, "_UseFoam", "USE_FOAM", foamProps, disabledProperties);
 
         // show only visible properties based on enabled features
         foreach (MaterialProperty property in properties)

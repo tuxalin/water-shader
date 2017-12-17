@@ -5,6 +5,7 @@ Shader "Water" {
 		[Toggle(USE_DISPLACEMENT)] _UseDisplacement("Displacement", Float) = 0
 		[Toggle(USE_MEAN_SKY_RADIANCE)] _UseMeanSky("Mean sky radiance", Float) = 0
 		[Toggle(USE_FILTERING)] _UseFiltering("Filtering", Float) = 0
+		[Toggle(USE_FOAM)] _UseFoam("Foam", Float) = 0
 		[Toggle(BLINN_PHONG)] _UsePhong("Blinn Phong", Float) = 0
 
 		[Header(Basic settings)]
@@ -84,6 +85,7 @@ Shader "Water" {
 		#pragma shader_feature USE_DISPLACEMENT
 		#pragma shader_feature USE_MEAN_SKY_RADIANCE
 		#pragma shader_feature USE_FILTERING
+		#pragma shader_feature USE_FOAM
 		#pragma shader_feature BLINN_PHONG
 		#pragma exclude_renderers d3d11_9x 
 		#pragma target 3.0
@@ -197,7 +199,7 @@ Shader "Water" {
 			float2 texCoord = worldPos.xz * 0.05 *_TextureTiling;
 			if (heightIntensity > 0.02)
 			{
-				float height = ComputeNoiseHeight(_HeightTexture, _WavesIntensity, _WavesNoise, 
+				float height = ComputeNoiseHeight(_HeightTexture, _WavesIntensity, _WavesNoise,
 					texCoord, noise, timer);
 				worldPos.y += height * heightIntensity;
 			}
@@ -287,11 +289,15 @@ Shader "Water" {
 #endif // #ifdef USE_FILTERING
 
 			// shore foam
+#ifdef USE_FOAM
 			float maxAmplitude = max(max(_WaveAmplitude.x, _WaveAmplitude.y), _WaveAmplitude.z);
 			float foam = FoamValue(_ShoreTexture, _FoamTexture, _FoamTiling,
 				_FoamNoise, _FoamSpeed * windDir, _FoamRanges, maxAmplitude,
 				surfacePosition, depthPosition, eyeDir, waterDepth, timedWindDir, timer);
 			foam *= _FoamIntensity;
+#else
+			float foam = 0;
+#endif // #ifdef USE_FOAM
 
 			half  shoreFade = saturate(waterDepth * _ShoreFade);
 			// ambient + diffuse
