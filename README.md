@@ -30,7 +30,7 @@ Certain features can be switched off via the following defines:
 
 ## Preview
 
-[![video](https://img.youtube.com/vi/MCG2yPbchj0/0.jpg)](https://www.youtube.com/watch?v=MCG2yPbchj0)
+[![video](screenshots/preview.jpg)](https://www.youtube.com/watch?v=MCG2yPbchj0)
 
 ![water-prev1](https://orig00.deviantart.net/159e/f/2017/347/a/7/tropical_water_by_tuxalin-dbwmvej.jpg)
 
